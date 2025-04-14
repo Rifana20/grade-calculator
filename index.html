@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Mark Predictor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #1f1f1f; /* dark grey */
+      color: white;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: 60px auto;
+      background: #121212; /* black */
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #ffffff;
+    }
+
+    label {
+      font-weight: 600;
+      margin-top: 15px;
+      display: block;
+      color: #e0e0e0;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 16px;
+      font-size: 16px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background-color: #2a2a2a;
+      color: white;
+      box-sizing: border-box;
+      transition: 0.3s;
+    }
+
+    input:focus, select:focus {
+      border-color: #999;
+      outline: none;
+      box-shadow: 0 0 5px rgba(200, 200, 200, 0.5);
+    }
+
+    button {
+      background-color: #444;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #666;
+    }
+
+    #result {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 17px;
+      color: #ccc;
+    }
+
+    .grade-table {
+      margin-top: 35px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 15px;
+      color: #eee;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #555;
+    }
+
+    th {
+      background-color: #2a2a2a;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #1c1c1c;
+    }
+
+    canvas {
+      margin-top: 30px;
+      background-color: #1a1a1a;
+      border-radius: 8px;
+      padding: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Student Mark Predictor</h2>
+    <form id="progressForm">
+      <label>Internal Marks (out of 50):</label>
+      <input type="number" id="internal" min="0" max="50" required>
+
+      <label>Goal Grade:</label>
+      <select id="goal" required>
+        <option value="135">S</option>
+        <option value="127.5">A+</option>
+        <option value="120">A</option>
+        <option value="112.5">B+</option>
+        <option value="105">B</option>
+        <option value="97.5">C+</option>
+        <option value="90">C</option>
+        <option value="82.5">D</option>
+        <option value="75">P</option>
+      </select>
+
+      <button type="submit">Calculate</button>
+    </form>
+
+    <div id="result"></div>
+
+    <canvas id="chart" height="150"></canvas>
+
+    <div class="grade-table">
+      <h3>Grade Scale (Out of 150)</h3>
+      <table>
+        <tr><th>Grade</th><th>Min Score</th></tr>
+        <tr><td>S</td><td>135+</td></tr>
+        <tr><td>A+</td><td>127.5</td></tr>
+        <tr><td>A</td><td>120</td></tr>
+        <tr><td>B+</td><td>112.5</td></tr>
+        <tr><td>B</td><td>105</td></tr>
+        <tr><td>C+</td><td>97.5</td></tr>
+        <tr><td>C</td><td>90</td></tr>
+        <tr><td>D</td><td>82.5</td></tr>
+        <tr><td>P</td><td>75</td></tr>
+        <tr><td>Fail</td><td>&lt; 75</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('progressForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const internal = parseFloat(document.getElementById('internal').value);
+      const goalTotal = parseFloat(document.getElementById('goal').value);
+
+      let minExternal = 40;
+
+      if (internal < 35) {
+        const shortfall = 35 - internal;
+        minExternal += shortfall;
+      }
+
+      let requiredExternal = goalTotal - internal;
+
+      if (requiredExternal < minExternal) {
+        requiredExternal = minExternal;
+      }
+
+      let output = "";
+
+      if (requiredExternal > 100) {
+        output = `
+          <p>You need ${requiredExternal.toFixed(2)} in external.</p>
+          <p><span style="color:red; font-weight:bold;">Not possible. Aim for a lower grade.</span></p>
+        `;
+      } else {
+        const total = internal + requiredExternal;
+        const grade = getGrade(total);
+        output = `
+          <p>To get your goal grade, you need <strong>${requiredExternal.toFixed(2)}</strong> in external.</p>
+          <p>Predicted Total: <strong>${internal} + ${requiredExternal.toFixed(2)} = ${total.toFixed(2)}</strong> → Grade: <strong>${grade}</strong></p>
+        `;
+        showChart(internal, requiredExternal);
+      }
+
+      document.getElementById('result').innerHTML = output;
+    });
+
+    function getGrade(score) {
+      if (score >= 135) return "S";
+      else if (score >= 127.5) return "A+";
+      else if (score >= 120) return "A";
+      else if (score >= 112.5) return "B+";
+      else if (score >= 105) return "B";
+      else if (score >= 97.5) return "C+";
+      else if (score >= 90) return "C";
+      else if (score >= 82.5) return "D";
+      else if (score >= 75) return "P";
+      else return "Fail";
+    }
+
+    function showChart(internal, external) {
+      const total = internal + external;
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (window.myChart) window.myChart.destroy();
+
+      window.myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Internal', 'External', 'Total'],
+          datasets: [{
+            label: 'Marks',
+            data: [internal, external, total],
+            backgroundColor: ['#999', '#666', '#ccc'] // grey shades
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 150,
+              ticks: {
+                color: '#ccc'
+              },
+              grid: {
+                color: '#333'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#ccc'
+              },
+              grid: {
+                color: '#333'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#ccc'
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
