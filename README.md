@@ -1,5 +1,5 @@
 # grade-calculator
-#HOSTED LINK
+# HOSTED LINK
 https://grade-calculator-three.vercel.app/
 # 🎓 Student Mark Predictor
 
