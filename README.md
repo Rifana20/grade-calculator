@@ -1,4 +1,6 @@
 # grade-calculator
+#HOSTED LINK
+https://grade-calculator-three.vercel.app/
 # 🎓 Student Mark Predictor
 
 The **Student Mark Predictor** is a simple, responsive web application built using HTML, CSS, JavaScript, and Chart.js. It helps students calculate the required **external exam mark** they need to achieve their desired grade based on their internal assessment marks.
